@@ -137,6 +137,7 @@ for l in range(50):
     computer.printTop(0) # print changes
     input()
 
+
 # If a == 0 then X = D, Y = A
 # If a == 1 then X = D, Y = M
 
