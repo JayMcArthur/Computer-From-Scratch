@@ -12,24 +12,24 @@ class CPU:
     def clock(self, instruct, data, reset):
         output = []
         # Get A Reg input for ALU
-        wrA = Mux16(self.regA.clock([0]*16, 0, 1), data, instruct[3])
+        wrA = Mux16(self.regA.clock([0]*16, 0), data, instruct[3])
         # Calcuate ALU
-        wrB = ALU(self.regD.clock([0]*16, 0, 1), wrA, *instruct[4:10])
+        wrB = ALU(self.regD.clock([0]*16, 0), wrA, *instruct[4:10])
         # Output Data
         output.append(wrB[0])
 
         # Output write
         output.append(And(instruct[0], instruct[12]))
         # Save to D Reg
-        self.regD.clock(wrB[0], And(instruct[0], instruct[11]), 0)
+        self.regD.clock(wrB[0], And(instruct[0], instruct[11]))
 
         # IF A Instruct let it in
-        wrC = Mux16(instruct, wrB[0], instruct[0] )
+        wrC = Mux16(instruct, wrB[0], instruct[0])
         # Save to A Reg
-        self.regA.clock(wrC, Or(And(instruct[0], instruct[10]), Not(instruct[0])), 0)
+        self.regA.clock(wrC, Or(And(instruct[0], instruct[10]), Not(instruct[0])))
 
         # Address Out
-        wrD = self.regA.clock([0]*16, 0, 1)
+        wrD = self.regA.clock([0]*16, 0)
         output.append(wrD)
 
         # Jump Logic
@@ -48,7 +48,7 @@ class CPU:
         wrF = And(wrF, instruct[0])
 
         # PC Out
-        output.append(self.pc.clock(wrD, 1, wrF, 1, reset))
+        output.append(self.pc.clock(wrD, 1, wrF, reset))
 
         return output
     
@@ -68,21 +68,24 @@ class Computer:
 
     def printTop(self, num):
         inputs = ["".join(seq) for seq in itertools.product("01", repeat=4)]
+        print("Register A : " + str(self.cpu.regA.clock([0] * 16, 0)))
+        print("Register D : " + str(self.cpu.regD.clock([0] * 16, 0)))
+        print("Register PC : " + str(self.cpu.pc.reg.clock([0] * 16, 0)))
         for i in inputs:
             if num:
-                print(str("% 2s" % int(i,2)) + ": " + str(int(''.join(map(str,self.data.clock([0]*16, [0]*12 + [int(i[0]), int(i[1]), int(i[2]), int(i[3])], 0, 1))),2)))
+                print(str("% 2s" % int(i,2)) + ": " + str(int(''.join(map(str,self.data.clock([0]*16, [0]*12 + [int(i[0]), int(i[1]), int(i[2]), int(i[3])], 0))),2)))
             else:
-                print(str("% 2s" % int(i,2)) + ": " + str(self.data.clock([0]*16, [0]*12 + [int(i[0]), int(i[1]), int(i[2]), int(i[3])], 0, 1)))
+                print(str("% 2s" % int(i,2)) + ": " + str(self.data.clock([0]*16, [0]*12 + [int(i[0]), int(i[1]), int(i[2]), int(i[3])], 0)))
 
     def clock(self):
         self.run = int(''.join(map(str, self.run)), 2)
-        self.out = self.cpu.clock(self.program[self.run], self.data.clock([0]*16, self.outA, 0, 1), 0)
-        self.outM = self.out[0]
-        self.outW = self.out[1]
-        self.outA = self.out[2]
-        self.data.clock(self.outM, self.outA, self.outW, 0)
+        self.out = self.cpu.clock(self.program[self.run], self.data.clock([0]*16, self.outA, 0), 0)
+        self.outM = self.out[0] # ?
+        self.outW = self.out[1] # ?
+        self.outA = self.out[2] # Data to Write
+        self.data.clock(self.outM, self.outA, self.outW)
         # printTop()
-        self.run = self.out[3]
+        self.run = self.out[3] # Instruction to Goto
 
 
 program = [
@@ -109,7 +112,7 @@ program = [
     [1,1,1, 1, 1,1,0,0,0,0, 0,1,0, 0,0,0], # 09 - M, D, NONE
     [0, 0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], # 10 - A = 0
     [1,1,1, 1, 0,1,0,0,1,1, 0,1,0, 0,0,0], # 11 - D-M, D, NONE
-    [0, 0,0,0, 0,0,0,0, 0,0,0,1, 0,1,1,0], # 12 - A = 22     >> STOP ocation
+    [0, 0,0,0, 0,0,0,0, 0,0,0,1, 0,1,1,0], # 12 - A = 22     >> STOP location
     [1,1,1, 0, 0,0,1,1,0,0, 0,0,0, 0,0,1], # 13 - D, NONE, JGT
     [0, 0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1], # 14 - A = 1
     [1,1,1, 1, 1,1,0,0,0,0, 0,1,0, 0,0,0], # 15 - M, D, NONE
@@ -125,9 +128,10 @@ program = [
     [1,1,1, 1, 0,0,1,1,0,0, 0,0,1, 0,0,0], # 25 - D, M, NONE
 
 
-    [0, 0,0,0, 0,0,0,0, 0,0,0,1, 1,0,1,0], # 26 - A = 26  >> EMD Location
+    [0, 0,0,0, 0,0,0,0, 0,0,0,1, 1,0,1,0], # 26 - A = 26  >> END Location
     [1,1,1, 0, 1,0,1,0,1,0, 0,0,0, 1,1,1]  # 27 - 0, NONE, JMP
 ]
+
 
 computer = Computer(program) # Setup computer
 print("")

@@ -1,18 +1,10 @@
-from Gates import Mux, Mux16
+from Gates import Mux, Mux16, Nor, And, Not
 from Chips import Inc16
 import itertools
 
 #
-# PREMADE CHIPS
+# Helper Functions
 #
-
-class DFF:
-    def __init__(self):
-        self.mem = 0
-    def set(self, input):
-        self.mem = input
-    def pull(self):
-        return self.mem
 
 def layer(func, size):
     if size > 1:
@@ -29,84 +21,77 @@ def ToIndex(i):
 # MEMORY CHIPS
 #
 
-class Bit:
-    # name = "1-bit Register"
+class DataLatch:
     def __init__(self):
-        self.DFF_Chip = DFF()
-    def clock(self, input, load):
-        self.DFF_Chip.set(int(Mux(self.DFF_Chip.pull(), input, load)))
-    def pull(self):
-        return self.DFF_Chip.pull()
+        self.wireLoop = 0
+    def clock(self, data, set):
+        self.wireLoop = int(Mux(self.wireLoop, data, set))
+        return self.wireLoop
 
 class Register:
     # name = "16-bit Register"
     inputs = ["".join(seq) for seq in itertools.product("01", repeat=4)]
     def __init__(self):
-        self.Bits = layer(Bit, 4) 
-    def clock(self, in16, load, pull):
+        self.Bits = layer(DataLatch, 4)
+    def clock(self, in16, load):
         in16 = ToIndex(in16)
         output = []
         for i in self.inputs:
-            self.Bits[int(i[0])][int(i[1])][int(i[2])][int(i[3])].clock(in16[int(i[0])][int(i[1])][int(i[2])][int(i[3])], load)
-            output.append(self.Bits[int(i[0])][int(i[1])][int(i[2])][int(i[3])].pull())
-        if pull:
-            return output[::-1]
-        else:
-            return None
+            output.append(self.Bits[int(i[0])][int(i[1])][int(i[2])][int(i[3])].clock(in16[int(i[0])][int(i[1])][int(i[2])][int(i[3])], load))
+            #self.Bits[int(i[0])][int(i[1])][int(i[2])][int(i[3])].pull())
+        return output[::-1]
 
 class RAM8:
     # name = "16-bit 8 Register Memory"
     def __init__(self):
         self.reg = layer(Register, 3)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]][k[1]][k[2]].clock(in16, load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]][k[1]][k[2]].clock(in16, load)
         
 class RAM64:
     #name = "16-bit 64 Register Memory"
     def __init__(self):
         self.reg = layer(RAM8, 3)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load)
 
 class RAM512:
     #name = "16-bit 512 Register Memory"
     def __init__(self):
         self.reg = layer(RAM64, 3)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load)
 
 class RAM4k:
     #name = "16-bit 4096 Register Memory"
     def __init__(self):
         self.reg = layer(RAM512, 3)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load)
 
 class RAM16k:
     # name = "16-bit 16,384 Register Memory"
     def __init__(self):
         self.reg = layer(RAM4k, 3)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]][k[1]][k[2]].clock(in16, k[3:], load)
 
 class RAM32k:
     # name = "16-bit 32,768 Register Memory"
     def __init__(self):
         self.reg = layer(RAM16k, 1)
-    def clock(self, in16, k, load, pull):
-        return self.reg[k[0]].clock(in16, k[1:], load, pull)
+    def clock(self, in16, k, load):
+        return self.reg[k[0]].clock(in16, k[1:], load)
 
 class PC:
     # name = "16-bit Program Counter"
     def __init__(self):
         self.reg = Register()
-    def clock(self, in16, inc, load, pull, reset):
-        output = self.reg.clock([0]*16, 0, 1)
+    def clock(self, in16, inc, load, reset):
+        output = self.reg.clock([0]*16, 0)
         output = Mux16(output, Inc16(output), inc)
         output = Mux16(output, in16, load)
         output = Mux16(output, [0]*16, reset)
-        self.reg.clock(output, 1, 0)
-        if pull:
-            return output
-        else:
-            return None
+        self.reg.clock(output, 1)
+        return output
+
