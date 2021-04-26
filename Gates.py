@@ -22,7 +22,7 @@ def And(inA, inB):
     # name = "And Gate"
     # IN, IN > OUT
     # value = 2
-    return Not(Nand(inA,inB))
+    return Not(Nand(inA, inB))
 
 def Or(inA, inB):
     # name = "Or Gate"
@@ -30,12 +30,18 @@ def Or(inA, inB):
     # value = 3
     return Nand(Not(inA), Not(inB))
 
+def Nor(inA, inB):
+    # name = "Nor Gate"
+    # IN, IN > OUT
+    # value = 4
+    return Not(Or(inA, inB))
+
 def Xor(inA, inB):
     # name = "Xor Gate"
     # IN, IN > OUT
     # value = 4
-    wrA = Nand(inA, inB)
-    return  Nand(Nand(inA,wrA), Nand(inB,wrA))
+    wire = Nand(inA, inB)
+    return  Nand(Nand(inA,wire), Nand(inB,wire))
 
 def Mux(inA, inB, sel):
     # name = "Multiplexor"
@@ -47,10 +53,7 @@ def DMux(input, sel):
     # name = "Demultiplexor"
     # IN, SEL > OUT, OUT
     # value = 5
-    output = []
-    output.append( And(input, Not(sel)) )
-    output.append( And(input, sel) )
-    return output  
+    return [And(input, Not(sel)), And(input, sel)]
 
 #
 # 16-bit Logic
