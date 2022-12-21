@@ -52,8 +52,26 @@ def Add16(inA16, inB16):
 def Inc16(input):
     # name = "16-bit Incrementer"
     # IN.16-1 > OUT.16-1
-    # value = 140
+    # value = 75
     one = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    output = [0] * 16
+    output[15] = Not(input[15])
+    output[13:14] = HalfAdder(input[14:15])
+    output[12:13] = HalfAdder(input[13], output[13])
+    output[11:12] = HalfAdder(input[12], output[12])
+    output[10:11] = HalfAdder(input[11], output[11])
+    output[9:10] = HalfAdder(input[10], output[10])
+    output[8:9] = HalfAdder(input[9], output[9])
+    output[7:8] = HalfAdder(input[8], output[8])
+    output[6:7] = HalfAdder(input[7], output[7])
+    output[5:6] = HalfAdder(input[6], output[6])
+    output[4:5] = HalfAdder(input[5], output[5])
+    output[3:4] = HalfAdder(input[4], output[4])
+    output[2:3] = HalfAdder(input[3], output[3])
+    output[1:2] = HalfAdder(input[2], output[2])
+    output[0:1] = HalfAdder(input[1], output[1])
+    output[0] = Xor(input[0], output[0])
+
     return Add16(input, one)
 
 
@@ -69,7 +87,7 @@ def Xor16(inA16, inB16):
 def ALU(inA16, inB16, ZX, NX, ZY, NY, F, NO):
     # name = "ALU"
     # IN.16-1, IN.16-1, ZX, NX, ZY, NY, F, NO > OUT.16-1, ZR, NG
-    # value = 540
+    # value = 540 (421)
     output = []
     inA16 = And16(inA16, [Not(ZX)] * 16)
     inA16 = Xor16(inA16, [NX] * 16)

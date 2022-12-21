@@ -8,7 +8,7 @@ from Memory import RAM32k, PC, Register
 
 class CPU:
     # name = CPU
-    # value = 1452
+    # value = 1452 (968)
     def __init__(self):
         self.pc = PC()
         self.regA = Register()
@@ -16,8 +16,7 @@ class CPU:
 
     def clock(self, instruct, memory, reset):
         # Label instruction and determine type
-        [TYPE, NA1, NA2, AOrM, Zx, Nx, Zy, Ny, F, No, SaveA, SaveD, SaveM, JLT, JEQ, JGT] = Mux16([0] * 16, instruct,
-                                                                                                  instruct[0]) # Excluding this from value as its just for naming purposes
+        [TYPE, NA1, NA2, AOrM, Zx, Nx, Zy, Ny, F, No, SaveA, SaveD, SaveM, JLT, JEQ, JGT] = Mux16([0] * 16, instruct, instruct[0])  # Excluding this from value as its just for naming purposes
         # Get Reg D
         xIn = self.regD.clock([0] * 16, 0)
         # Get Reg A or M
