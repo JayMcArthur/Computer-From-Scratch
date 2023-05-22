@@ -1,78 +1,58 @@
 from itertools import product
 import os
 
-from Chips import ALU
-from Gates import Nor, And, Or, Not, Mux16
-from Memory import RAM32k, PC, Register
-
-
-class CPU:
-    # name = CPU
-    # value = 1452 (968)
-    def __init__(self):
-        self.pc = PC()
-        self.regA = Register()
-        self.regD = Register()
-
-    def clock(self, instruct, memory, reset):
-        # Label instruction and determine type
-        [TYPE, NA1, NA2, AOrM, Zx, Nx, Zy, Ny, F, No, SaveA, SaveD, SaveM, JLT, JEQ, JGT] = Mux16([0] * 16, instruct, instruct[0])  # Excluding this from value as its just for naming purposes
-        # Get Reg D
-        xIn = self.regD.clock([0] * 16, 0)
-        # Get Reg A or M
-        yIn = Mux16(self.regA.clock([0] * 16, 0), memory, AOrM)
-
-        # Calculate ALU
-        [aluOut, isZero, isNeg] = ALU(xIn, yIn, Zx, Nx, Zy, Ny, F, No)
-
-        # Save Reg D
-        regDOut = self.regD.clock(aluOut, SaveD)
-        # Save Reg A
-        regAOut = self.regA.clock(Mux16(instruct, aluOut, TYPE), Or(Not(TYPE), SaveA))
-
-        # Jump Logic
-        Jump = Or(Or(And(isNeg, JLT), And(isZero, JEQ)), And(Nor(isZero, isNeg), JGT))
-
-        # PC update
-        PCOut = self.pc.clock(regAOut, 1, Jump, reset)
-
-        return [aluOut, SaveM, regAOut[1:], PCOut]
+from Gates import Mux16
+from Chips import Inc16, CPU
+from Memory import Register, RAM64k
 
 
 class Computer:
     # name = Computer
-    # value = 1452 + 4718592
+    # value = ?
     def __init__(self, prog):
-        self.cpu = CPU()
-        # input("CPU Made")
-        self.data = RAM32k()
+        self.mem = RAM64k()  # M, Value = 9 437 184
         # input("RAM Made")
-        self.program = prog
-        self.out = self.cpu.clock([1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0] * 16, 1)
-        self.run = self.out[3]
+        self.program = prog  # ROM, Value = ?
+        self.regA = Register()  # A, Value = 144
+        self.regD = Register()  # D, Value = 144
+        self.regPC = Register()  # PC, Value = 144
+        # Other Value: 672 > 1104
+        # - CPU: 548
+        # - Mux16: 49
+        # - Inc16: 75
+
+    def clock(self):
+        ROM_address = int(''.join(map(str, self.regPC.clock([0]*16, 0))), 2)  # TODO - Use binary saving
+        if ROM_address > len(self.program) - 1:
+            print('END OF PROGRAM')
+            exit(0)
+        regA_data = self.regA.clock([0]*16, 0)
+        regD_data = self.regD.clock([0]*16, 0)
+        mem_data = self.mem.clock([0]*16, regA_data, 0)
+        [alu_out, save, jump] = CPU(self.program[ROM_address], regA_data, regD_data, mem_data)
+        regA_data = self.regA.clock(alu_out, save[0])
+        self.regD.clock(alu_out, save[1])
+        self.mem.clock(alu_out, regA_data, save[2])
+        PC = self.regPC.clock([0] * 16, 0)
+        PC = Mux16(Inc16(PC), regA_data, jump)
+        PC = self.regPC.clock(PC, 1)
         # input("Clock Successful")
 
     def print_top(self, decimal, amount):
         os.system('cls' if os.name == 'nt' else 'clear')
         inputs = ["".join(seq) for seq in product("01", repeat=amount)]
-        print("Register A : " + str(self.cpu.regA.clock([0] * 16, 0)))
-        print("Register D : " + str(self.cpu.regD.clock([0] * 16, 0)))
-        print("Register PC : " + str(self.cpu.pc.reg.clock([0] * 16, 0)))
+        print(f'Computer 2')
+        print("Register A : " + str(self.regA.clock([0] * 16, 0)))
+        print("Register D : " + str(self.regD.clock([0] * 16, 0)))
+        print("Register PC : " + str(self.regPC.clock([0] * 16, 0)))
         for i in inputs:
             if decimal:
                 print(str("% 2s" % int(i, 2)) + ": " + str(int(''.join(
-                    map(str, self.data.clock([0] * 16, [0] * (15 - amount) + [*map(int, list(i))], 0))), 2)))
+                    map(str, self.mem.clock([0] * 16, [0] * (16 - amount) + [*map(int, list(i))], 0))), 2)))
             else:
                 print(str("% 2s" % int(i, 2)) + ": " + str(
-                    self.data.clock([0] * 16, [0] * (15 - amount) + [*map(int, list(i))], 0)))
+                    self.mem.clock([0] * 16, [0] * (16 - amount) + [*map(int, list(i))], 0)))
         input()
-
-    def clock(self):
-        self.run = int(''.join(map(str, self.run)), 2)
-        if self.run > len(self.program) - 1: exit(0)
-        self.out = self.cpu.clock(self.program[self.run], self.data.clock([0] * 16, self.out[2], 0), 0)
-        self.data.clock(self.out[0], self.out[2], self.out[1])
-        self.run = self.out[3]  # Instruction to Goto
 
 
 program = [
@@ -109,6 +89,7 @@ program = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0],  # 22 - A = 2       >> STOP
     [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]  # 23 - M, A, NONE
 ]
+
 
 computer = Computer(program)  # Setup computer
 while True:

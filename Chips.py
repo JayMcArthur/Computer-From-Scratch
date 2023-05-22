@@ -1,101 +1,128 @@
-from Gates import Nand, Not, Xor, And16, Mux16, Or16Way
+from Gates import Nand, Not, And, Xor, Xor16, Mux16, Selector16, Or8Way
 
 
-def HalfAdder(inA, inB):
+def HalfAdder(a, b):
     # name = "Half Adder"
     # IN, IN > OUT.2, OUT.1
     # value = 5
     output = []
-    inC = Nand(inA, inB)
-    output.append(Not(inC))
-    output.append(Nand(Nand(inA, inC), Nand(inB, inC)))
+    n1 = Nand(a, b)
+    output.append(Not(n1))
+    output.append(Nand(Nand(a, n1), Nand(b, n1)))
     return output
 
 
-def FullAdder(inA, inB, carry):
-    # name = "Full Adder"
-    # IN, IN, CARRY > OUT.2, OUT.1
-    # value = 9
-    output = []
-    wrA = Nand(inA, inB)
-    wrB = Nand(Nand(inA, wrA), Nand(inB, wrA))
-    wrC = Nand(carry, wrB)
-    output.append(Nand(wrA, wrC))
-    output.append(Nand(Nand(wrB, wrC), Nand(carry, wrC)))
-    return output
-
-
-def Add16(inA16, inB16):
-    # name = "16-bit Adder"
-    # IN.16-1, IN.16-1 > OUT.16-1
-    # value = 140
-    output = [0] * 16
-    output = output[0:14] + HalfAdder(inA16[15], inB16[15])
-    output = output[0:13] + FullAdder(inA16[14], inB16[14], output[14]) + output[15:]
-    output = output[0:12] + FullAdder(inA16[13], inB16[13], output[13]) + output[14:]
-    output = output[0:11] + FullAdder(inA16[12], inB16[12], output[12]) + output[13:]
-    output = output[0:10] + FullAdder(inA16[11], inB16[11], output[11]) + output[12:]
-    output = output[0:9] + FullAdder(inA16[10], inB16[10], output[10]) + output[11:]
-    output = output[0:8] + FullAdder(inA16[9], inB16[9], output[9]) + output[10:]
-    output = output[0:7] + FullAdder(inA16[8], inB16[8], output[8]) + output[9:]
-    output = output[0:6] + FullAdder(inA16[7], inB16[7], output[7]) + output[8:]
-    output = output[0:5] + FullAdder(inA16[6], inB16[6], output[6]) + output[7:]
-    output = output[0:4] + FullAdder(inA16[5], inB16[5], output[5]) + output[6:]
-    output = output[0:3] + FullAdder(inA16[4], inB16[4], output[4]) + output[5:]
-    output = output[0:2] + FullAdder(inA16[3], inB16[3], output[3]) + output[4:]
-    output = output[0:1] + FullAdder(inA16[2], inB16[2], output[2]) + output[3:]
-    output = FullAdder(inA16[1], inB16[1], output[1]) + output[2:]
-    output = FullAdder(inA16[0], inB16[0], output[0])[1:] + output[1:]
-    return output
-
-
-def Inc16(input):
+def Inc16(a16):
     # name = "16-bit Incrementer"
     # IN.16-1 > OUT.16-1
     # value = 75
-    one = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     output = [0] * 16
-    output[15] = Not(input[15])
-    output[13:14] = HalfAdder(input[14:15])
-    output[12:13] = HalfAdder(input[13], output[13])
-    output[11:12] = HalfAdder(input[12], output[12])
-    output[10:11] = HalfAdder(input[11], output[11])
-    output[9:10] = HalfAdder(input[10], output[10])
-    output[8:9] = HalfAdder(input[9], output[9])
-    output[7:8] = HalfAdder(input[8], output[8])
-    output[6:7] = HalfAdder(input[7], output[7])
-    output[5:6] = HalfAdder(input[6], output[6])
-    output[4:5] = HalfAdder(input[5], output[5])
-    output[3:4] = HalfAdder(input[4], output[4])
-    output[2:3] = HalfAdder(input[3], output[3])
-    output[1:2] = HalfAdder(input[2], output[2])
-    output[0:1] = HalfAdder(input[1], output[1])
-    output[0] = Xor(input[0], output[0])
-
-    return Add16(input, one)
-
-
-def Xor16(inA16, inB16):
-    # extra for ease
-    # value = 64
-    output = []
-    for i in range(16):
-        output.append(Xor(inA16[i], inB16[i]))
+    output[15] = Not(a16[15])
+    n1 = a16[15]
+    for i in range(14, 0, -1):
+        n1, output[i] = HalfAdder(a16[i], n1)
+    output[0] = Xor(a16[0], n1)
     return output
 
 
-def ALU(inA16, inB16, ZX, NX, ZY, NY, F, NO):
-    # name = "ALU"
-    # IN.16-1, IN.16-1, ZX, NX, ZY, NY, F, NO > OUT.16-1, ZR, NG
-    # value = 540 (421)
-    output = []
-    inA16 = And16(inA16, [Not(ZX)] * 16)
-    inA16 = Xor16(inA16, [NX] * 16)
-    inB16 = And16(inB16, [Not(ZY)] * 16)
-    inB16 = Xor16(inB16, [NY] * 16)
+def o41UnaryALU1(zIn, n, zI, a):
+    # value = 4
+    return Nand(Nand(zIn, a), Nand(n, Nand(zI, a)))
 
-    out = Mux16(And16(inA16, inB16), Add16(inA16, inB16), F)
-    output.append(Xor16(out, [NO] * 16))
-    output.append(Not(Or16Way(output[0])))  # Is Zero
-    output.append(output[0][0])  # Is Negative
+
+def o41UnaryALU16(zIn, n, zI, inA16):
+    # value = 64
+    output = []
+    for i in range(16):
+        output.append(o41UnaryALU1(zIn, n, zI, inA16[i]))
+    return output
+
+
+def Unary_ALU(z, n, a16):
+    # name = "Unary ALU"
+    # IN, IN, INx16 > OUTx16
+    # value = 68
+    zI = Not(z)
+    nI = Not(n)
+    return o41UnaryALU16(And(zI, nI), n, zI, a16)
+
+
+def Nand_and_xor(a, b):
+    #
+    #
+    # value = 4
+    nand = Nand(a, b)
+    return [nand, Nand(Nand(a, nand), Nand(b, nand))]
+
+
+def Nand_xor_adder(a, b, c):
+    #
+    #
+    # value = 9
+    nand = Nand_and_xor(a, b)
+    xor = Nand_and_xor(nand[1], c)
+    return [nand[0], Nand(nand[0], xor[0]), xor[1]]
+
+
+def Nand_16_add_16(a16, b16):
+    #
+    #
+    # value 139
+    nand_out = [0] * 16
+    add_out = [0] * 16
+    temp = Nand_and_xor(a16[15], b16[15])
+    add_out[15] = temp[1]
+    nand_out[15] = temp[0]
+    hold = Not(temp[0])
+    for i in range(14, 0, -1):
+        temp = Nand_xor_adder(a16[i], b16[i], hold)
+        add_out[i] = temp[2]
+        hold = temp[1]
+        nand_out[i] = temp[0]
+    temp = Nand_and_xor(a16[0], b16[0])
+    add_out[0] = Xor(temp[1], hold)
+    nand_out[0] = temp[0]
+    return [nand_out, add_out]
+
+
+def ALU(a16, b16, ZX, NX, ZY, NY, F, NO):
+    # name = "Arithmetic Logic Unit"
+    # IN, OPC.1, OPC.0, IN, IN, INx16, INx16 > OUTx16
+    # value = 392
+    a16 = Unary_ALU(ZX, NX, a16)
+    b16 = Unary_ALU(ZY, NY, b16)
+    wireA = Nand_16_add_16(a16, b16)
+    FI = Not(F)
+    NO = [Xor(FI, NO)] * 16
+    return Xor16(Selector16(wireA[0], wireA[1], F, FI), NO)
+
+
+def Condition(lt, eq, gt, a16):
+    # name = "Condition Checker"
+    # INx16, INx16 > OUT, OUT, OUT
+    # value = 50
+    ors = Or8Way([Or8Way(a16[1:9])] + a16[9:])
+    part = Nand(Nand(eq, Not(ors)), Nand(gt, ors))
+    return Nand(Nand(part, Not(a16[0])), Nand(lt, a16[0]))
+
+
+def ALU_Instruction(Ix16, ax16, dx16, mx16):
+    # name
+    # value = 491
+    c = 0
+    output = []
+    output.append(ALU(dx16, Mux16(ax16, mx16, Ix16[3]), Ix16[4], Ix16[5], Ix16[6], Ix16[7], Ix16[8], Ix16[9]))
+    output.append(Ix16[10:13])
+    output.append(Condition(Ix16[13], Ix16[14], Ix16[15], output[0]))
+    return output
+
+
+def CPU(Ix16, Ax16, Dx15, Mx15):
+    # Value = 548
+    output = []
+    alu_r = ALU_Instruction(Ix16, Ax16, Dx15, Mx15)
+    I0I = Not(Ix16[0])
+    output.append(Selector16(Ix16, alu_r[0], Ix16[0], I0I))
+    output.append([Nand(Ix16[0], Not(alu_r[1][0])), And(Ix16[0], alu_r[1][1]), And(Ix16[0], alu_r[1][2])])
+    output.append(And(Ix16[0], alu_r[2]))
     return output

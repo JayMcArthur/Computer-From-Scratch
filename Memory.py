@@ -1,4 +1,4 @@
-from Gates import Mux, Mux16, DMux8Way, Mux8Way16
+from Gates import Mux, Mux16
 from Chips import Inc16
 
 
@@ -18,9 +18,9 @@ def layer(func, size):
 #
 class Bit:
     # name = "bit Register"
-    # value = 9
+    # value = 4
     def __init__(self):
-        self.DFF = 0  # 5 Nands
+        self.DFF = 0
 
     def clock(self, data, save):
         self.DFF = int(Mux(self.DFF, data, save))
@@ -100,18 +100,3 @@ class RAM64k:
 
     def clock(self, in16, address, load):
         return self.regs[address[0]].clock(in16, address[1:], load)
-
-
-class PC:
-    # name = "16-bit Program Counter"
-    # value = 476
-    def __init__(self):
-        self.reg = Register()
-
-    def clock(self, in16, inc, load, reset):
-        output = self.reg.clock([0] * 16, 0)
-        output = Mux16(output, Inc16(output), inc)
-        output = Mux16(output, in16, load)
-        output = Mux16(output, [0] * 16, reset)
-        self.reg.clock(output, 1)
-        return output

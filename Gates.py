@@ -2,166 +2,145 @@
 # PREMADE GATES
 #
 
-def Nand(inA, inB):
+def Nand(a, b):
     # name = 'Nand Gate'
     # IN, IN > OUT
     # value = 1
-    return int(not (inA and inB))
+    return int(not (a and b))
 
 
 #
 # Elementary Logic
 #
 
-def Not(input):
+def Not(a):
     # name = "Not Gate"
     # IN > OUT
     # value = 1
-    return Nand(input, input)
+    return Nand(a, a)
 
 
-def And(inA, inB):
+def And(a, b):
     # name = "And Gate"
     # IN, IN > OUT
     # value = 2
-    return Not(Nand(inA, inB))
+    return Not(Nand(a, b))
 
 
-def Or(inA, inB):
+def Or(a, b):
     # name = "Or Gate"
     # IN, IN > OUT
     # value = 3
-    return Nand(Not(inA), Not(inB))
+    return Nand(Not(a), Not(b))
 
 
-def Nor(inA, inB):
+def Nor(a, b):
     # name = "Nor Gate"
     # IN, IN > OUT
     # value = 4
-    return Not(Or(inA, inB))
+    return Not(Or(a, b))
 
 
-def Xor(inA, inB):
+def Xor(a, b):
     # name = "Xor Gate"
     # IN, IN > OUT
     # value = 4
-    wire = Nand(inA, inB)
-    return Nand(Nand(inA, wire), Nand(inB, wire))
+    n1 = Nand(a, b)
+    return Nand(Nand(a, n1), Nand(b, n1))
 
 
-def Mux(inA, inB, sel):
+def Selector(a, b, sel, selI):
+    # name = "Selector"
+    # IN, IN, SEL > OUT
+    # value = 3
+    return Nand(Nand(a, selI), Nand(b, sel))
+
+
+def Mux(a, b, sel):
     # name = "Multiplexor"
     # IN, IN, SEL > OUT
     # value = 4
-    return Nand(Nand(inA, Not(sel)), Nand(inB, sel))
-
-
-def DMux(input, sel):
-    # name = "Demultiplexor"
-    # IN, SEL > OUT, OUT
-    # value = 5
-    return [And(input, Not(sel)), And(input, sel)]
+    return Nand(Nand(a, Not(sel)), Nand(b, sel))
 
 
 #
 # 16-bit Logic
 #
 
-def Not16(in16):
+def Nand16(a16, b16):
+    # name = "16-bit Nand"
+    # 16xIN, 16xIN > 16xOUT
+    # value = 16
+    output = []
+    for i in range(16):
+        output.append(Nand(a16[i], b16[i]))
+    return output
+
+
+def Not16(a16):
     # name = "16-bit Not"
     # 16xIN > 16xOUT
     # value = 16
     output = []
     for i in range(16):
-        output.append(Not(in16[i]))
+        output.append(Not(a16[i]))
     return output
 
 
-def And16(inA16, inB16):
+def And16(a16, b16):
     # name = "16-bit And"
     # 16xIN, 16xIN > 16xOUT
     # value = 32
     output = []
     for i in range(16):
-        output.append(And(inA16[i], inB16[i]))
+        output.append(And(a16[i], b16[i]))
     return output
 
 
-def Or16(inA16, inB16):
-    # name = "16-bit And"
+def Or16(a16, b16):
+    # name = "16-bit Or"
     # 16xIN, 16xIN > 16xOUT
     # value = 48
     output = []
     for i in range(16):
-        output.append(Or(inA16[i], inB16[i]))
+        output.append(Or(a16[i], b16[i]))
     return output
 
 
-def Mux16(inA16, inB16, sel):
-    # name = "16-bit Multiplexor"
-    # 16xIN, 16xIN, SEL > 16xOUT
+def Xor16(a16, b16):
+    # name = "16-bit Xor"
+    # 16xIN, 16xIN > 16xOUT
     # value = 64
     output = []
     for i in range(16):
-        output.append(Mux(inA16[i], inB16[i], sel))
+        output.append(Xor(a16[i], b16[i]))
     return output
+
+
+def Selector16(a16, b16, sel, selI):
+    # name = "16-bit Multiplexor"
+    # 16xIN, 16xIN, SEL > 16xOUT
+    # value = 48
+    output = []
+    for i in range(16):
+        output.append(Selector(a16[i], b16[i], sel, selI))
+    return output
+
+
+def Mux16(a16, b16, sel):
+    # name = "16-bit Multiplexor"
+    # 16xIN, 16xIN, SEL > 16xOUT
+    # value = 49
+    selI = Not(sel)
+    return Selector16(a16, b16, sel, selI)
 
 
 #
 # Multi-way Logic
 #
 
-def Or8Way(in8):
-    # Extra for ease
-    return Or(Or(Or(in8[0], in8[1]), Or(in8[2], in8[3])), Or(Or(in8[4], in8[5]), Or(in8[6], in8[7])))
+def Or8Way(a8):
+    # name = '8 way Or"
+    # value = 21
+    return Or(Or(Or(a8[0], a8[1]), Or(a8[2], a8[3])), Or(Or(a8[4], a8[5]), Or(a8[6], a8[7])))
 
-
-def Or16Way(in16):
-    # name = "16 Way Or"
-    # 16xIN > OUT
-    # value = 45
-    return Or(Or8Way(in16[:8]), Or8Way(in16[8:]))
-
-
-def Mux4Way(inA, inB, inC, inD, sel):
-    # name = "4 Way Mux"
-    # IN, IN, IN, IN, SEL.2, SEL.1 > OUT
-    # value = 12
-    return Mux(Mux(inA, inB, sel[1]), Mux(inC, inD, sel[1]), sel[0])
-
-
-def Mux4Way16(inA16, inB16, inC16, inD16, sel):
-    # name = "4 Way 16-bit Mux"
-    # 16xIN, 16xIN, 16xIN, 16xIN, SEL.2, SEL.1 > 16xOUT
-    # value = 192
-    return Mux16(Mux16(inA16, inB16, sel[1]), Mux16(inC16, inD16, sel[1]), sel[0])
-
-
-def Mux8Way(inA, inB, inC, inD, inE, inF, inG, inH, sel):
-    # name = "8 Way Mux"
-    # 8xIN, SEL.3, SEL.2, SEL.1 > OUT
-    # value = 28
-    return Mux(Mux4Way(inA, inB, inC, inD, sel[1:]), Mux4Way(inE, inF, inG, inH, sel[1:]), sel[0])
-
-
-def Mux8Way16(inA16, inB16, inC16, inD16, inE16, inF16, inG16, inH16, sel):
-    # name = "8 Way 16-bit Mux"
-    # 8x [16xIN], SEL.3, SEL.2, SEL.1 > 16xOUT
-    # value = 448
-    return Mux16(Mux4Way16(inA16, inB16, inC16, inD16, sel[1:]), Mux4Way16(inE16, inF16, inG16, inH16, sel[1:]), sel[0])
-
-
-def DMux4Way(input, sel):
-    # name = "4 Way Demux"
-    # IN, SEL.2, SEL.1 > 4xOUT
-    # value = 15
-    wireA = DMux(input, sel[0])
-    return DMux(wireA[0], sel[1]) + DMux(wireA[1], sel[1])
-
-
-def DMux8Way(input, sel):
-    # name = "8 Way Demux"
-    # 16xIN, SEL.3, SEL.2, SEL.1 > 8xOUT
-    # value = 35
-    wireA = DMux(input, sel[0])
-    return DMux4Way(wireA[0], sel[1:]) + DMux4Way(wireA[1], sel[1:])
