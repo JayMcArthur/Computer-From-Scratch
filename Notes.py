@@ -20,5 +20,10 @@ OS Creation:
 > https://www.youtube.com/watch?v=MwPjvJ9ulSc&t=9s
 
 
+Add Verlog
+> https://github.com/Obijuan/open-fpga-verilog-tutorial/wiki/Home_EN
+> http://digitaljs.tilk.eu/
+> https://hdlbits.01xz.net/wiki/Problem_sets#Getting_Started
+
 
 '''
